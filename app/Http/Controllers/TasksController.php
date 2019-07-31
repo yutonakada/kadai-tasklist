@@ -8,7 +8,7 @@ use App\Task;
 
 class TasksController extends Controller
 {
-    // getでmessages/にアクセスされた場合の「一覧表示処理」
+    // getでtasks/にアクセスされた場合の「一覧表示処理」
     public function index()
     {
         $tasks = Task::all();
