@@ -11,14 +11,23 @@ class TasksController extends Controller
     // getでtasks/にアクセスされた場合の「一覧表示処理」
     public function index()
     {
-        $tasks = Task::all();
+        $data = [];
+        if (\Auth::check()) {
+            $user = \Auth::user();
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
+            
+            $data = [
+                'user' => $user,
+                'tasks' => $tasks,
+            ];
+            return view('tasks.index', $data);
+        }
         
-        return view('tasks.index', [
-            'tasks' => $tasks,
-        ]);
+        return view('welcome', $data);
+        
     }
 
-    // getでmessages/createにアクセスされた場合の「新規登録画面表示処理」
+    // getでtasks/createにアクセスされた場合の「新規登録画面表示処理」
     public function create()
     {
         $task = new Task;
@@ -28,7 +37,7 @@ class TasksController extends Controller
         ]);
     }
 
-    // postでmessages/にアクセスされた場合の「新規登録処理」
+    // postでtasks/にアクセスされた場合の「新規登録処理」
     public function store(Request $request)
     {
         $this->validate($request, [
@@ -36,35 +45,52 @@ class TasksController extends Controller
             'content' => 'required|max:191',
         ]);
         
+        //$request->user()->tasks()->create([
+        //    'status' => $request->status,
+        //    'content' => $request->content,
+        //    'user_id' => $request->\Auth::user()->id,
+        //]);
+        
+        //過去の記述
         $task = new Task;
         $task->status = $request->status;
         $task->content = $request->content;
+        $task->user_id = \Auth::user()->id;
         $task->save();
         
         return redirect('/');
     }
 
-    // getでmessages/idにアクセスされた場合の「取得表示処理」
+    // getでtasks/idにアクセスされた場合の「取得表示処理」
     public function show($id)
     {
         $task = Task::find($id);
         
-        return view('tasks.show', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.show', [
+                'task' => $task,
+            ]);
+        }
+
+        return redirect('/');
+        
     }
 
-    // getでmessages/id/editにアクセスされた場合の「更新画面表示処理」
+    // getでtasks/id/editにアクセスされた場合の「更新画面表示処理」
     public function edit($id)
     {
         $task = Task::find($id);
         
-        return view('tasks.edit', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.edit', [
+                'task' => $task,
+            ]);
+        }
+        
+        return redirect('/');
     }
 
-    // putまたはpatchでmessages/idにアクセスされた場合の「更新処理」
+    // putまたはpatchでtasks/idにアクセスされた場合の「更新処理」
     public function update(Request $request, $id)
     {
         $this->validate($request, [
@@ -77,15 +103,23 @@ class TasksController extends Controller
         $task->content = $request->content;
         $task->save();
         
+        
         return redirect('/');
     }
 
-    // deleteでmessages/idにアクセスされた場合の「削除処理」
+    // deleteでtasks/idにアクセスされた場合の「削除処理」
     public function destroy($id)
     {
-        $task = Task::find($id);
-        $task->delete();
+        // 過去の記述
+        //$task = Task::find($id);
+        //$task->delete();
         
+        $task = \App\Task::find($id);
+
+        if (\Auth::id() === $task->user_id) {
+            $task->delete();
+        }
+
         return redirect('/');
     }
 }
